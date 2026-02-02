@@ -2,7 +2,7 @@
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import plotly.express as px
 
 st.set_page_config(page_title="Boitu's Pathogen Research Profile", layout="wide", page_icon="🦠")
