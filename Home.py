@@ -1,11 +1,14 @@
-
-
 import streamlit as st
 import pandas as pd
-#import matplotlib.pyplot as plt
-import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.ticker as ticker
 
 st.set_page_config(page_title="Boitu's Pathogen Research Profile", layout="wide", page_icon="🦠")
+
+# Set Seaborn style
+sns.set_style("whitegrid")
+sns.set_palette("husl")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
@@ -44,7 +47,7 @@ malaria_stats = pd.DataFrame({
 malaria_stats["Est_Cases"] = pd.to_numeric(malaria_stats["Est_Cases"])
 malaria_stats["Est_Deaths"] = pd.to_numeric(malaria_stats["Est_Deaths"])
 
-# Home page (your original, unchanged except minor cleanup)
+# Home page
 if menu == "Home":
     st.title("🦠 Boitu's Top Infectious Diseases Board")
     st.markdown("""
@@ -72,7 +75,7 @@ if menu == "Home":
     Preventive and control strategies for communicable diseases must be granted priority in light of this harsh reality.
     """)
 
-    # Priority Pathogens Overview table (your original)
+    # Priority Pathogens Overview table
     overview = pd.DataFrame({
         "Infectious Disease": ["TB", "HIV/AIDS", "Malaria", "Influenza", "COVID-19"],
         "Global deaths (2024 est.)": ["1,23M", "630K (40,8M living with)", "610k", "290K - 650k", "1,8K"],
@@ -83,7 +86,7 @@ if menu == "Home":
     st.subheader("Priority Pathogens Overview")
     st.dataframe(overview)
 
-    # Your Plotly horizontal bar chart (unchanged)
+    # Convert Plotly bar chart to Seaborn
     data = {
         "Infectious_Disease": ["TB", "HIV/AIDS", "Malaria", "Influenza", "COVID-19"],
         "Deaths_2024": [1230000, 630000, 610000, 470000, 1800]   
@@ -91,34 +94,78 @@ if menu == "Home":
     df = pd.DataFrame(data)
 
     st.subheader("Infectious Diseases Global Deaths Comparison (2024 Estimates)")
-    fig = px.bar(
-        df,
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    # Sort by deaths for better visualization
+    df_sorted = df.sort_values("Deaths_2024", ascending=True)
+    
+    # Create bar plot with color gradient
+    bars = sns.barplot(
+        data=df_sorted,
         x="Deaths_2024",
         y="Infectious_Disease",
-        orientation="h",
-        color="Deaths_2024",
-        text_auto="~s",
-        color_continuous_scale="Blues",
+        palette="Blues_r",
+        ax=ax
     )
-    fig.update_layout(
-        xaxis_title="Estimated Global Deaths (2024)",
-        yaxis_title="",
-        height=400,
-        bargap=0.25,
-        xaxis_tickformat="~s",
-        template="plotly_white",
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    
+    # Format x-axis with commas
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    ax.set_xlabel("Estimated Global Deaths (2024)", fontsize=12)
+    ax.set_ylabel("")
+    
+    # Add value labels on bars
+    for i, v in enumerate(df_sorted["Deaths_2024"]):
+        ax.text(v + v*0.01, i, f'{v:,.0f}', va='center', fontsize=10)
+    
+    # Set title and adjust layout
+    ax.set_title("Global Deaths by Infectious Disease (2024 Estimates)", fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    st.pyplot(fig, use_container_width=True)
 
-# Disease pages – now with numeric data & working line charts
+# Disease pages – all converted to Seaborn
 elif menu == "TB":
     st.title("TB (Tuberculosis)")
     st.subheader("Global Trends Table")
     st.dataframe(tb_stats)
     
     st.subheader("Trends Plot (Cases & Deaths over Years)")
-    st.line_chart(tb_stats.set_index("Year")[["Est_Cases", "Est_Deaths"]]
-                  , x_label="Year", y_label="Count")
+    
+    # Prepare data for Seaborn (melt to long format)
+    tb_melted = tb_stats.melt(id_vars="Year", value_vars=["Est_Cases", "Est_Deaths"],
+                             var_name="Metric", value_name="Count")
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Create line plot
+    sns.lineplot(
+        data=tb_melted,
+        x="Year",
+        y="Count",
+        hue="Metric",
+        style="Metric",
+        markers=True,
+        dashes=False,
+        linewidth=2.5,
+        markersize=8,
+        ax=ax
+    )
+    
+    # Format y-axis with commas
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    
+    # Customize legend
+    ax.legend(title="Metric", labels=["Estimated Cases", "Estimated Deaths"])
+    
+    # Set labels and title
+    ax.set_xlabel("Year", fontsize=12)
+    ax.set_ylabel("Count", fontsize=12)
+    ax.set_title("TB Trends: Cases vs Deaths Over Time", fontsize=14, fontweight='bold')
+    
+    # Add grid for better readability
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    st.pyplot(fig, use_container_width=True)
 
 elif menu == "HIV/AIDS":
     st.title("HIV/AIDS")
@@ -126,22 +173,72 @@ elif menu == "HIV/AIDS":
     st.dataframe(hiv_stats)
 
     st.subheader("People Living with HIV (Prevalence)")
-    st.line_chart(
-        hiv_stats.set_index("Year")["Living_with_HIV"],
-        x_label="Year",
-        y_label="People living with HIV"
-    )
-
-    st.subheader("New HIV Infections & AIDS-related Deaths")
-    st.line_chart(
-        hiv_stats.set_index("Year")[["Est_New_Infections", "Est_Deaths"]],
-        x_label="Year",
-        y_label="Annual count"
+    
+    fig1, ax1 = plt.subplots(figsize=(12, 6))
+    
+    sns.lineplot(
+        data=hiv_stats,
+        x="Year",
+        y="Living_with_HIV",
+        marker="o",
+        linewidth=2.5,
+        markersize=8,
+        color="#FF6B6B",
+        ax=ax1
     )
     
-    # st.subheader("Trends Plot (New Infections & Deaths over Years)")
-    # st.line_chart(hiv_stats.set_index("Year")[["Est_New_Infections", "Est_Deaths"]],
-    #               x_label="Year", y_label="Count")
+    # Format y-axis with commas
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    
+    ax1.set_xlabel("Year", fontsize=12)
+    ax1.set_ylabel("People Living with HIV", fontsize=12)
+    ax1.set_title("HIV Prevalence Over Time", fontsize=14, fontweight='bold')
+    ax1.grid(True, alpha=0.3)
+    
+    # Fill under the line
+    ax1.fill_between(hiv_stats["Year"], hiv_stats["Living_with_HIV"], alpha=0.2, color="#FF6B6B")
+    
+    plt.tight_layout()
+    st.pyplot(fig1, use_container_width=True)
+
+    st.subheader("New HIV Infections & AIDS-related Deaths")
+    
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    
+    # Prepare data for multi-line plot
+    hiv_melted = hiv_stats.melt(id_vars="Year", value_vars=["Est_New_Infections", "Est_Deaths"],
+                                var_name="Metric", value_name="Count")
+    
+    # Custom palette for these metrics
+    custom_palette = ["#4ECDC4", "#556270"]
+    
+    sns.lineplot(
+        data=hiv_melted,
+        x="Year",
+        y="Count",
+        hue="Metric",
+        style="Metric",
+        markers=True,
+        dashes=False,
+        linewidth=2.5,
+        markersize=8,
+        palette=custom_palette,
+        ax=ax2
+    )
+    
+    # Format y-axis with commas
+    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    
+    # Customize legend
+    ax2.legend(title="Metric", labels=["New Infections", "AIDS-related Deaths"])
+    
+    ax2.set_xlabel("Year", fontsize=12)
+    ax2.set_ylabel("Annual Count", fontsize=12)
+    ax2.set_title("New HIV Infections vs AIDS-related Deaths", fontsize=14, fontweight='bold')
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    st.pyplot(fig2, use_container_width=True)
 
 elif menu == "Malaria":
     st.title("Malaria")
@@ -149,19 +246,52 @@ elif menu == "Malaria":
     st.dataframe(malaria_stats)
     
     st.subheader("Trends Plot")
-    fig = px.line(
-    malaria_stats,
-    x="Year",
-    y=["Est_Cases", "Est_Deaths"],
-    log_y=True,
-    title="Malaria Trends In Logarithmic Scale (Cases vs Deaths)",
-    labels={"Est_Cases": "Cases", "Est_Deaths": "Deaths"}
+    
+    # Prepare data for Seaborn
+    malaria_melted = malaria_stats.melt(id_vars="Year", value_vars=["Est_Cases", "Est_Deaths"],
+                                       var_name="Metric", value_name="Count")
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Create line plot with log scale
+    sns.lineplot(
+        data=malaria_melted,
+        x="Year",
+        y="Count",
+        hue="Metric",
+        style="Metric",
+        markers=True,
+        dashes=False,
+        linewidth=2.5,
+        markersize=8,
+        ax=ax
     )
-    st.plotly_chart(fig, use_container_width=True)
+    
+    # Set logarithmic scale on y-axis
+    ax.set_yscale('log')
+    
+    # Customize the log scale tick labels
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    
+    # Customize legend
+    ax.legend(title="Metric", labels=["Estimated Cases", "Estimated Deaths"])
+    
+    # Set labels and title
+    ax.set_xlabel("Year", fontsize=12)
+    ax.set_ylabel("Count (Log Scale)", fontsize=12)
+    ax.set_title("Malaria Trends: Cases vs Deaths (Logarithmic Scale)", fontsize=14, fontweight='bold')
+    
+    # Add grid for better readability
+    ax.grid(True, alpha=0.3, which='both')
+    
+    # Add annotation for log scale
+    ax.text(0.02, 0.98, 'Y-axis: Logarithmic Scale', 
+            transform=ax.transAxes, fontsize=10, 
+            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    plt.tight_layout()
+    st.pyplot(fig, use_container_width=True)
 
 # Sidebar Footer
 st.sidebar.markdown("---")
-st.sidebar.info("Data: OurWorldinData/NICD/WHO 2025-2026 | Built with Streamlit, pandas, matplotlib & plotly")
-
-
-# CODE TO RUN THE APP: streamlit run profile_project/Home.py
+st.sidebar.info("Data: OurWorldinData/NICD/WHO 2025-2026 | Built with Streamlit, pandas & seaborn")
