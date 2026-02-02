@@ -1,19 +1,14 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import matplotlib.ticker as ticker
+import plotly.express as px
 
 st.set_page_config(page_title="Boitu's Pathogen Research Profile", layout="wide", page_icon="🦠")
-
-# Set Seaborn style
-sns.set_style("whitegrid")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
 menu = st.sidebar.radio(
     "Explore:",
-    ["Home", "TB", "HIV/AIDS", "Malaria"]
+    ["Home", "TB", "HIV/AIDS", "Malaria"]  # Add "Influenza", "COVID-19" if you define their DFs
 )
 
 # Define DataFrames with realistic data + numeric conversion
@@ -46,27 +41,21 @@ malaria_stats = pd.DataFrame({
 malaria_stats["Est_Cases"] = pd.to_numeric(malaria_stats["Est_Cases"])
 malaria_stats["Est_Deaths"] = pd.to_numeric(malaria_stats["Est_Deaths"])
 
-# Home page
+# Home page (your original, unchanged except minor cleanup)
 if menu == "Home":
     st.title("🦠 Boitu's Top Infectious Diseases Board")
     st.markdown("""
     **Welcome! Wamukelekile! Vho tanganedzwa! O amogetswe! Welkom! Bem-Vindo! Bienvenu! Willkommen!** 
     \nMy name is Boitumelo, a disease-causing agents' researcher at Rhodes University, South Africa.  
-    This app explores priority infectious diseases using Python (pandas for data, matplotlib and seaborn for visuals).  
+    This app explores priority infectious diseases using Python (pandas for data, matplotlib and plotly for visuals).  
     Focus: SA/global infectious diseases (data from OurWorldinData, World Medical Association, NICD, WHO, 2025-2026 reports).
     """)
+    st.image("https://media.baamboozle.com/uploads/images/445684/1647955483_57254_gif-url.gif", 
+             caption="Infectious Diseases (Baamboozle)", width=700)
     
-    # Create two columns for images
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.image("https://media.baamboozle.com/uploads/images/445684/1647955483_57254_gif-url.gif", 
-                 caption="Infectious Diseases (Baamboozle)", use_container_width=True)
-    
-    with col2:
-        st.image("https://www.verywellhealth.com/thmb/iL0FXU2GLj4M7YpgHiavt-POs_g=/900x0/filters:no_upscale():max_bytes(150000):strip_icc()/infection-5096014-Final-eaf7a90b39fd4eb69b3a1776b721d975.gif", 
-                 caption="Infection: Overview and more (verywell health)", use_container_width=True)
-    
+    st.subheader("What are Infectious Diseases?")
+    st.image("https://www.verywellhealth.com/thmb/iL0FXU2GLj4M7YpgHiavt-POs_g=/900x0/filters:no_upscale():max_bytes(150000):strip_icc()/infection-5096014-Final-eaf7a90b39fd4eb69b3a1776b721d975.gif", 
+             caption="Infection: Overview and more (verywell health)", width=700)
     st.markdown("""
     Infectious diseases are caused by pathogenic microorganisms ("germs") that get into your body from the outside, such as bacteria, viruses, parasites, fungi or prions(very rare type of infectious diseases). 
     The diseases can be spread, directly or indirectly. Some infectious diseases can pass from person to person. Some spread through insects or other animals. 
@@ -80,7 +69,7 @@ if menu == "Home":
     Preventive and control strategies for communicable diseases must be granted priority in light of this harsh reality.
     """)
 
-    # Priority Pathogens Overview table
+    # Priority Pathogens Overview table (your original)
     overview = pd.DataFrame({
         "Infectious Disease": ["TB", "HIV/AIDS", "Malaria", "Influenza", "COVID-19"],
         "Global deaths (2024 est.)": ["1,23M", "630K (40,8M living with)", "610k", "290K - 650k", "1,8K"],
@@ -91,7 +80,7 @@ if menu == "Home":
     st.subheader("Priority Pathogens Overview")
     st.dataframe(overview)
 
-    # Create bar chart data
+    # Your Plotly horizontal bar chart (unchanged)
     data = {
         "Infectious_Disease": ["TB", "HIV/AIDS", "Malaria", "Influenza", "COVID-19"],
         "Deaths_2024": [1230000, 630000, 610000, 470000, 1800]   
@@ -99,67 +88,34 @@ if menu == "Home":
     df = pd.DataFrame(data)
 
     st.subheader("Infectious Diseases Global Deaths Comparison (2024 Estimates)")
-    
-    fig, ax = plt.subplots(figsize=(10, 5))
-    df_sorted = df.sort_values("Deaths_2024")
-    
-    # Create horizontal bar plot
-    colors = plt.cm.Blues_r([0.2, 0.4, 0.6, 0.8, 1.0])
-    bars = ax.barh(df_sorted["Infectious_Disease"], df_sorted["Deaths_2024"], color=colors)
-    
-    # Format x-axis
-    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:,.0f}'))
-    ax.set_xlabel("Estimated Global Deaths (2024)")
-    
-    # Add value labels
-    for bar in bars:
-        width = bar.get_width()
-        ax.text(width + width*0.01, bar.get_y() + bar.get_height()/2, 
-                f'{width:,.0f}', ha='left', va='center')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+    fig = px.bar(
+        df,
+        x="Deaths_2024",
+        y="Infectious_Disease",
+        orientation="h",
+        color="Deaths_2024",
+        text_auto="~s",
+        color_continuous_scale="Blues",
+    )
+    fig.update_layout(
+        xaxis_title="Estimated Global Deaths (2024)",
+        yaxis_title="",
+        height=400,
+        bargap=0.25,
+        xaxis_tickformat="~s",
+        template="plotly_white",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-# Disease pages
+# Disease pages – now with numeric data & working line charts
 elif menu == "TB":
     st.title("TB (Tuberculosis)")
     st.subheader("Global Trends Table")
     st.dataframe(tb_stats)
     
     st.subheader("Trends Plot (Cases & Deaths over Years)")
-    
-    # Create figure with two y-axes
-    fig, ax1 = plt.subplots(figsize=(12, 6))
-    
-    # Plot cases on left y-axis
-    color1 = 'tab:blue'
-    ax1.set_xlabel('Year')
-    ax1.set_ylabel('Estimated Cases', color=color1)
-    line1 = ax1.plot(tb_stats["Year"], tb_stats["Est_Cases"], color=color1, 
-                     marker='o', label='Cases', linewidth=2)
-    ax1.tick_params(axis='y', labelcolor=color1)
-    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x/1e6:.1f}M'))
-    
-    # Create second y-axis for deaths
-    ax2 = ax1.twinx()
-    color2 = 'tab:red'
-    ax2.set_ylabel('Estimated Deaths', color=color2)
-    line2 = ax2.plot(tb_stats["Year"], tb_stats["Est_Deaths"], color=color2, 
-                     marker='s', label='Deaths', linewidth=2)
-    ax2.tick_params(axis='y', labelcolor=color2)
-    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x/1e3:.0f}K'))
-    
-    # Add title and grid
-    plt.title('TB Trends: Cases vs Deaths Over Time', fontweight='bold')
-    ax1.grid(True, alpha=0.3)
-    
-    # Combine legends
-    lines = line1 + line2
-    labels = [l.get_label() for l in lines]
-    ax1.legend(lines, labels, loc='upper left')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+    st.line_chart(tb_stats.set_index("Year")[["Est_Cases", "Est_Deaths"]]
+                  , x_label="Year", y_label="Count")
 
 elif menu == "HIV/AIDS":
     st.title("HIV/AIDS")
@@ -167,68 +123,42 @@ elif menu == "HIV/AIDS":
     st.dataframe(hiv_stats)
 
     st.subheader("People Living with HIV (Prevalence)")
-    
-    fig1, ax1 = plt.subplots(figsize=(12, 6))
-    
-    ax1.plot(hiv_stats["Year"], hiv_stats["Living_with_HIV"], 
-             marker='o', linewidth=2, color='purple')
-    ax1.set_xlabel('Year')
-    ax1.set_ylabel('People Living with HIV')
-    ax1.set_title('HIV Prevalence Over Time', fontweight='bold')
-    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x/1e6:.1f}M'))
-    ax1.grid(True, alpha=0.3)
-    ax1.fill_between(hiv_stats["Year"], hiv_stats["Living_with_HIV"], 
-                     alpha=0.2, color='purple')
-    
-    plt.tight_layout()
-    st.pyplot(fig1)
+    st.line_chart(
+        hiv_stats.set_index("Year")["Living_with_HIV"],
+        x_label="Year",
+        y_label="People living with HIV"
+    )
 
     st.subheader("New HIV Infections & AIDS-related Deaths")
+    st.line_chart(
+        hiv_stats.set_index("Year")[["Est_New_Infections", "Est_Deaths"]],
+        x_label="Year",
+        y_label="Annual count"
+    )
     
-    fig2, ax2 = plt.subplots(figsize=(12, 6))
-    
-    ax2.plot(hiv_stats["Year"], hiv_stats["Est_New_Infections"], 
-             marker='o', linewidth=2, label='New Infections', color='green')
-    ax2.plot(hiv_stats["Year"], hiv_stats["Est_Deaths"], 
-             marker='s', linewidth=2, label='Deaths', color='red')
-    
-    ax2.set_xlabel('Year')
-    ax2.set_ylabel('Count')
-    ax2.set_title('New HIV Infections vs AIDS-related Deaths', fontweight='bold')
-    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x/1e3:.0f}K'))
-    ax2.grid(True, alpha=0.3)
-    ax2.legend()
-    
-    plt.tight_layout()
-    st.pyplot(fig2)
+    # st.subheader("Trends Plot (New Infections & Deaths over Years)")
+    # st.line_chart(hiv_stats.set_index("Year")[["Est_New_Infections", "Est_Deaths"]],
+    #               x_label="Year", y_label="Count")
 
 elif menu == "Malaria":
     st.title("Malaria")
     st.subheader("Global Trends Table")
     st.dataframe(malaria_stats)
     
-    st.subheader("Trends Plot (Logarithmic Scale)")
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
-    ax.plot(malaria_stats["Year"], malaria_stats["Est_Cases"], 
-            marker='o', linewidth=2, label='Cases', color='blue')
-    ax.plot(malaria_stats["Year"], malaria_stats["Est_Deaths"], 
-            marker='s', linewidth=2, label='Deaths', color='red')
-    
-    ax.set_xlabel('Year')
-    ax.set_ylabel('Count (Log Scale)')
-    ax.set_title('Malaria Trends: Cases vs Deaths (Logarithmic Scale)', fontweight='bold')
-    ax.set_yscale('log')
-    ax.grid(True, alpha=0.3, which='both')
-    ax.legend()
-    
-    # Format y-axis for log scale
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: f'{y:,.0f}'))
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+    st.subheader("Trends Plot")
+    fig = px.line(
+    malaria_stats,
+    x="Year",
+    y=["Est_Cases", "Est_Deaths"],
+    log_y=True,
+    title="Malaria Trends In Logarithmic Scale (Cases vs Deaths)",
+    labels={"Est_Cases": "Cases", "Est_Deaths": "Deaths"}
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 # Sidebar Footer
 st.sidebar.markdown("---")
-st.sidebar.info("Data: OurWorldinData/NICD/WHO 2025-2026 | Built with Streamlit, pandas & matplotlib")
+st.sidebar.info("Data: OurWorldinData/NICD/WHO 2025-2026 | Built with Streamlit, pandas, matplotlib & plotly")
+
+
+# CODE TO RUN THE APP: streamlit run profile_project/Home.py
